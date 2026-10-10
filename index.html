@@ -71,11 +71,11 @@ header h1{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#737
 #pb{background:#e5e5e5}#pb i{background:#171717}
 .card,.stop{border-radius:0;border:1px solid #e5e5e5;box-shadow:none}
 button,.btn{border-radius:0;text-transform:uppercase;letter-spacing:1.4px;font-size:14px;font-weight:700}
-.pri,.grn,label.cam:not(.sec){background:#171717;color:#fafafa}.pri:hover{background:#0a0a0a}
+.pri,.grn,label.cam:not(.sec){background:#F3EDE2;color:#0a0a0a;border:2px solid #171717}.pri:hover{background:#EDE4D3}
 .sec{background:#fff;color:#171717;border:1px solid #171717}
 .stop{text-transform:none;letter-spacing:-.01em;font-size:17px}
 .kicker,.lv,.lbl{text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:#737373}
-.chips button{border-radius:0;text-transform:none;letter-spacing:0;border:1px solid #d4d4d4;background:#fff}.chips button.on{background:#171717;color:#fff;border-color:#171717}
+.chips button{border-radius:0;text-transform:none;letter-spacing:0;border:1px solid #d4d4d4;background:#fff}.chips button.on{background:#F3EDE2;color:#0a0a0a;border-color:#171717}
 .chips button.cv{background:#fff;color:#df2225;border-color:#df2225}.chips button.cv.on{background:#df2225;color:#fff}
 .ph .x{border:0;color:#df2225;letter-spacing:.05em;font-size:12px}
 input[type=text],textarea,select{border-radius:0!important;border:1px solid #e5e5e5!important;background:#fff!important}
@@ -176,4 +176,22 @@ async function share(lk){const bs=m.querySelectorAll("button");bs.forEach(b=>b.d
 async function clearAll(){if(!confirm("Remove all photos and notes from this phone?"))return;await new Promise(ok=>{const r=tx("readwrite").clear();r.onsuccess=ok;});S={pos:null,extra:[],notes:{},tags:{}};save();home();}
 Object.assign(window,{go,home,addRoom,finishPage,share,clearAll,__test:{buildZip,addPhoto,makeZip,rooms}});
 openDB().then(()=>{if(S.pos==="finish")finishPage();else if(typeof S.pos==="number")go(S.pos);else home();});
-</script></body></html>
+</script><style id="mw-share-css">
+:root{--mw-ease:cubic-bezier(.2,.8,.2,1);--mw-dur:180ms}
+.mw-hover{transition:transform var(--mw-dur) var(--mw-ease),box-shadow var(--mw-dur) var(--mw-ease),background-color var(--mw-dur) var(--mw-ease)}
+.mw-hover:hover,.mw-hover:focus-visible{transform:translateY(-1px) scale(1.03);box-shadow:0 6px 18px rgba(10,10,10,.12)}
+.mw-hover:active{transform:scale(.98)}
+@media (prefers-reduced-motion:reduce){.mw-hover,.mw-hover:hover{transition:none;transform:none}}
+#mwShare{position:fixed;right:12px;bottom:calc(12px + var(--mw-share-offset,0px) + env(safe-area-inset-bottom));z-index:50;min-height:44px;padding:0 16px;background:#fff;color:#171717;border:1px solid #171717;border-radius:0;font-family:Hind,system-ui,sans-serif;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px}
+#mwShareMsg{position:fixed;right:12px;bottom:calc(64px + var(--mw-share-offset,0px));z-index:51;background:#fff;border:1px solid #e5e5e5;color:#0a0a0a;padding:6px 10px;font:13px Hind,system-ui,sans-serif;display:none}
+</style>
+<button id="mwShare" class="mw-hover" type="button" aria-label="Share this app"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/></svg>Share</button><div id="mwShareMsg">Copied</div>
+<script>
+(function(){const b=document.getElementById('mwShare'),msg=document.getElementById('mwShareMsg');
+b.onclick=async()=>{const url=location.href.split('#')[0];const title=document.title;const sum=(window.mwShareSummary&&window.mwShareSummary())||'';const text=(sum?sum+'\n':'')+title;
+ if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name=='AbortError')return}}
+ if(/iPhone|iPad|Android/i.test(navigator.userAgent)){location.href='sms:?&body='+encodeURIComponent(text+' '+url);return}
+ try{await navigator.clipboard.writeText(text+' '+url)}catch(e){const t=document.createElement('textarea');t.value=text+' '+url;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}
+ msg.style.display='block';setTimeout(()=>msg.style.display='none',1800)}})();
+</script>
+<script>document.documentElement.style.setProperty('--mw-share-offset','76px');function mwHov(){document.querySelectorAll('button,.card,label.cam').forEach(e=>{if(e.id!='mwShare')e.classList.add('mw-hover')})}mwHov();new MutationObserver(mwHov).observe(document.body,{childList:true,subtree:true});</script></body></html>
