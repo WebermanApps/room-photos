@@ -267,7 +267,7 @@ b.onclick=async()=>{const url=location.href.split('#')[0];const title=document.t
 .mwbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:4px 0;border-bottom:1px solid #E5E5E5;margin:0 0 6px}
 .mwbar .wm{font:700 15px Khand,Hind,sans-serif;letter-spacing:.14em;color:#171717;text-transform:uppercase;white-space:nowrap}
 .mwbar img.logo{margin:0!important;max-height:22px;width:auto}
-.mwbar #mwShare{position:static!important;bottom:auto!important;right:auto!important;flex:none;border-radius:999px!important;border:2px solid var(--mw-earth)!important;color:var(--mw-earth)!important;background:#fff!important}
+.mwbar #mwShare{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;font:700 12px Khand,Hind,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;position:static!important;bottom:auto!important;right:auto!important;flex:none;border-radius:999px!important;border:2px solid var(--mw-earth)!important;color:var(--mw-earth)!important;background:#fff!important}
 .mwbar #mwShare:active{background:var(--mw-earth)!important;color:#fff!important}
 #mwShareMsg{top:60px!important;bottom:auto!important}
 /* earthy outline buttons, fill on press */
@@ -276,9 +276,14 @@ b.onclick=async()=>{const url=location.href.split('#')[0];const title=document.t
 .nav button.sec,button.sec,.btn.sec,label.btn.cam{border:2px solid var(--mw-earth)!important;color:var(--mw-earth)!important}
 .nav button.pri:active,button.pri:active,button.grn:active,.btn.pri:active{background:var(--mw-jungle)!important;color:#fff!important}
 .nav button.sec:active,button.sec:active,.btn.sec:active,label.btn.cam:active{background:var(--mw-earth)!important;color:#fff!important}
+.nav button.pri:hover,.nav .grn:hover,button.pri:hover,button.grn:hover{background:#fff!important}
+.nav button.pri:active,.nav .grn:active{background:var(--mw-jungle)!important;color:#fff!important}
 </style>
 <script id="mw-niko-js">(function(){function bar(){var h=document.querySelector('header');if(!h||h.querySelector('.mwbar'))return;var b=document.createElement('div');b.className='mwbar';
 var logo=h.querySelector('img.logo');if(logo)b.appendChild(logo);else{var w=document.createElement('span');w.className='wm';w.textContent='Max Weberman';b.appendChild(w)}
-var s=document.getElementById('mwShare');if(s)b.appendChild(s);h.insertBefore(b,h.firstChild);document.documentElement.style.setProperty('--mw-share-offset','0px')}
+var s=document.getElementById('mwShare');if(!s){s=document.createElement('button');s.id='mwShare';s.type='button';s.setAttribute('aria-label','Share this app');s.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/></svg>Share';
+s.onclick=async function(){var url=location.href.split('#')[0],t=document.title;if(navigator.share){try{await navigator.share({title:t,url:url});return}catch(e){if(e&&e.name==='AbortError')return}}
+if(/iPhone|iPad|Android/i.test(navigator.userAgent)){location.href='sms:?&body='+encodeURIComponent(t+' '+url);return}try{await navigator.clipboard.writeText(url);s.lastChild.textContent='Copied';setTimeout(function(){s.lastChild.textContent='Share'},1600)}catch(e){prompt('Copy this link:',url)}}}
+b.appendChild(s);h.insertBefore(b,h.firstChild);document.documentElement.style.setProperty('--mw-share-offset','0px')}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bar);else bar();})();</script><!--/mw-niko-->
 </body></html>
