@@ -286,4 +286,24 @@ s.onclick=async function(){var url=location.href.split('#')[0],t=document.title;
 if(/iPhone|iPad|Android/i.test(navigator.userAgent)){location.href='sms:?&body='+encodeURIComponent(t+' '+url);return}try{await navigator.clipboard.writeText(url);s.lastChild.textContent='Copied';setTimeout(function(){s.lastChild.textContent='Share'},1600)}catch(e){prompt('Copy this link:',url)}}}
 b.appendChild(s);h.insertBefore(b,h.firstChild);document.documentElement.style.setProperty('--mw-share-offset','0px')}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bar);else bar();})();</script><!--/mw-niko-->
+
+<!-- mw-submit -->
+<script src="submit.js"></script>
+<script src="submit-hook.js"></script>
+<script>
+var MWRP={meta:null};
+MWHook({app:'room-photos',deck:'2026-10-13',
+ isEnd:function(){var h=document.querySelector('#m h2');return !!h&&h.textContent.trim()==='Finish and Share';},
+ mount:function(){return document.getElementById('m');},
+ intro:'Tap Submit to send your room list, notes, and photo details to Max. The photos themselves are not sent here (they are too large); use Share All Photos for those.',
+ onMount:function(){allPhotos().then(function(all){var by={};rooms().forEach(function(r){by[r.id]=r;});MWRP.meta=all.map(function(p){var r=by[p.item]||{},t=S.tags[p.id]||{};return {photoId:p.id,level:r.lv||'',room:r.name||p.item,file:p.name||'',bytes:p.blob?p.blob.size:0,type:p.blob?p.blob.type:'',added:p.t?new Date(p.t).toISOString():null,tag:t.tag||'',covered:!!t.covered};});}).catch(function(){});},
+ results:function(){var R=rooms();return {notSent:'Photo image files are not sent (too large). Only photo metadata, tags, and room notes are included.',photoCount:MWRP.meta?MWRP.meta.length:null,photos:MWRP.meta||'metadata still loading',rooms:R.map(function(r){return {level:r.lv,room:r.name,note:S.notes[r.id]||'',photos:MWRP.meta?MWRP.meta.filter(function(m){return m.room===r.name&&m.level===r.lv;}).length:null};}),extraRooms:S.extra};},
+ notes:function(){return rooms().filter(function(r){return S.notes[r.id];}).map(function(r){return r.lv+' / '+r.name+': '+S.notes[r.id];}).join('\n');}});
+</script>
+<!-- /mw-submit -->
+<!-- mw-built-footer -->
+<style>.mw-built{display:block;clear:both;width:100%;box-sizing:border-box;margin:0;padding:14px 16px calc(14px + var(--mw-built-pad,0px) + env(safe-area-inset-bottom,0px));background:#fafaf8;text-align:center;font-family:Hind,system-ui,sans-serif;font-size:12px;line-height:1.4;color:#8a8a8a;position:relative;z-index:1}.mw-built a{color:#8a8a8a;text-decoration:none;transition:color .15s,opacity .15s}.mw-built a.mw-hover:hover,.mw-built a:focus-visible{color:#555;text-decoration:underline}</style>
+<footer class="mw-built"><a class="mw-hover" href="https://maxweberman.com" target="_blank" rel="noopener">Built by Max Weberman</a></footer>
+<script>(function(){var r=document.documentElement;function m(){var ft=document.querySelector('.mw-built'),h=0,vh=innerHeight;if(!ft)return;document.querySelectorAll('body *').forEach(function(e){if(ft.contains(e))return;var s=getComputedStyle(e);if((s.position=='fixed'||s.position=='sticky')&&s.display!='none'&&s.visibility!='hidden'){var b=e.getBoundingClientRect();if(b.height>0&&b.height<vh*.5&&b.bottom>=vh-2&&b.top>vh*.5)h=Math.max(h,vh-b.top)}});r.style.setProperty('--mw-built-pad',Math.ceil(h)+'px')}addEventListener('load',m);addEventListener('resize',m);setTimeout(m,600);setTimeout(m,2000)})();</script>
+<!-- /mw-built-footer -->
 </body></html>
