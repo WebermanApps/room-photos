@@ -141,7 +141,8 @@ const TAGS=["Wide","Floor","Walls","Tile","Counter","Cabinets","Fixtures","Other
 const KEY="roomPhotos_v1";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{pos:null,extra:[],notes:{},tags:{}};
 function save(){localStorage.setItem(KEY,JSON.stringify(S));}
-function rooms(){const r=[];LEVELS.forEach(([k,n,l])=>l.forEach(x=>r.push({id:k+"|"+x,lk:k,lv:n,name:x})));S.extra.forEach((e,i)=>{const L=LEVELS.find(l=>l[0]===e.lk)||LEVELS[1];r.push({id:"x"+i+"|"+e.name,lk:L[0],lv:L[1],name:e.name});});return r;}
+let RP_HIDE=[];function rooms(){return allRooms().filter(x=>RP_HIDE.indexOf(x.id)<0);}
+function allRooms(){const r=[];LEVELS.forEach(([k,n,l])=>l.forEach(x=>r.push({id:k+"|"+x,lk:k,lv:n,name:x})));S.extra.forEach((e,i)=>{const L=LEVELS.find(l=>l[0]===e.lk)||LEVELS[1];r.push({id:"x"+i+"|"+e.name,lk:L[0],lv:L[1],name:e.name});});return r;}
 let db;function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open("roomPhotos1",1);r.onupgradeneeded=()=>{r.result.createObjectStore("p",{keyPath:"id",autoIncrement:true}).createIndex("item","item");};r.onsuccess=()=>{db=r.result;ok();};r.onerror=()=>no(r.error);});}
 function tx(m){return db.transaction("p",m).objectStore("p");}
 function addPhoto(item,blob,name){return new Promise(ok=>{const r=tx("readwrite").add({item,blob,name:name||"",t:Date.now()});r.onsuccess=()=>ok(r.result);});}
@@ -158,7 +159,7 @@ async function shrink(f){try{let bmp;try{bmp=await createImageBitmap(f,{imageOri
  const w=bmp.width,h=bmp.height,s=Math.min(1,2000/Math.max(w,h));const c=document.createElement("canvas");c.width=Math.round(w*s);c.height=Math.round(h*s);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
  const b=await new Promise(ok=>c.toBlob(ok,"image/jpeg",0.85));return b||f;}catch(e){return f;}}
 let OPEN=null,VIEW="list";
-async function home(){S.pos=null;save();freeUrls();hd.textContent="Room Photos";const R=rooms(),c=await counts();const done=R.filter(r=>c[r.id]).length;prog(done/R.length);
+async function home(){S.pos=null;save();freeUrls();hd.textContent="Room Photos";const R=rooms(),c=await counts();const done=R.filter(r=>c[r.id]).length;prog(R.length?done/R.length:1);
  let tot=Object.values(c).reduce((a,b)=>a+b,0);
  let h=`<div class="rp-top"><h2>Room Photos</h2><div class="rp-seg" role="tablist"><button class="${VIEW==="list"?"on":""}" onclick="setView('list')">List</button><button class="${VIEW==="grid"?"on":""}" onclick="setView('grid')">Grid</button></div></div>
  <p class="cnt" style="margin:0 2px 10px">${done} of ${R.length} rooms have photos · ${tot} photos. Tap a room to see or add its photos.</p>
@@ -216,7 +217,7 @@ function makeZip(files){const parts=[],cen=[];let off=0;const enc=new TextEncode
  const cs=cen.reduce((a,b)=>a+(b.byteLength),0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
  return new Blob([...parts,...cen,e.buffer],{type:"application/zip"});}
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
-async function buildZip(lk){const R=rooms(),byId=new Map(R.map(r=>[r.id,r]));const all=await allPhotos();const files=[],cnt=new Map(),notes=[];
+async function buildZip(lk){const R=allRooms(),byId=new Map(R.map(r=>[r.id,r]));const all=await allPhotos();const files=[],cnt=new Map(),notes=[];
  for(const p of all){const r=byId.get(p.item);if(!r||(lk&&r.lk!==lk))continue;const t=S.tags[p.id]||{};const tg=t.tag?slug(t.tag)+(t.covered?"-covered":""):"photo";
   const key=r.id+tg,n=(cnt.get(key)||0)+1;cnt.set(key,n);const ty=(p.blob.type||"").toLowerCase(),on=(p.name||"").toLowerCase();
   const ext=ty.includes("jpeg")||ty.includes("jpg")?"jpg":ty.includes("png")?"png":ty.includes("heic")||on.endsWith(".heic")?"heic":ty.includes("heif")||on.endsWith(".heif")?"heif":"jpg";
@@ -227,7 +228,7 @@ async function buildZip(lk){const R=rooms(),byId=new Map(R.map(r=>[r.id,r]));con
  txt+="\nCovered (protective covering still on):\n"+(notes.filter(x=>x.covered).map(x=>"  "+x.file).join("\n")||"  None")+"\n";
  const enc=new TextEncoder();files.unshift({name:"notes.json",data:enc.encode(JSON.stringify({rooms:rn,photos:notes},null,1))});files.unshift({name:"notes.txt",data:enc.encode(txt)});
  return {zip:makeZip(files),n:notes.length};}
-async function finishPage(){S.pos="finish";save();freeUrls();hd.textContent="Finish and Share";prog(1);const R=rooms(),all=await allPhotos(),byId=new Map(R.map(r=>[r.id,r]));
+async function finishPage(){S.pos="finish";save();freeUrls();hd.textContent="Finish and Share";prog(1);const R=allRooms(),all=await allPhotos(),byId=new Map(R.map(r=>[r.id,r]));
  const sz={},ct={};let T=0;all.forEach(p=>{const r=byId.get(p.item);if(!r)return;sz[r.lk]=(sz[r.lk]||0)+p.blob.size;ct[r.lk]=(ct[r.lk]||0)+1;T+=p.blob.size;});
  const mb=b=>(b/1048576).toFixed(0)+" MB";
  m.innerHTML=`<h2>Finish and Share</h2><div class="card"><p style="margin-top:0">${all.length} photos, about ${mb(T)}. Share everything at once, or one level at a time if it's big (over about 200 MB) or the share fails.</p>
@@ -296,9 +297,20 @@ MWHook({app:'room-photos',deck:'2026-10-13',
  isEnd:function(){var h=document.querySelector('#m h2');return !!h&&h.textContent.trim()==='Finish and Share';},
  mount:function(){return document.getElementById('m');},
  intro:'Tap Submit to send your room list, notes, and photo details to Max. The photos themselves are not sent here (they are too large); use Share All Photos for those.',
- onMount:function(){allPhotos().then(function(all){var by={};rooms().forEach(function(r){by[r.id]=r;});MWRP.meta=all.map(function(p){var r=by[p.item]||{},t=S.tags[p.id]||{};return {photoId:p.id,level:r.lv||'',room:r.name||p.item,file:p.name||'',bytes:p.blob?p.blob.size:0,type:p.blob?p.blob.type:'',added:p.t?new Date(p.t).toISOString():null,tag:t.tag||'',covered:!!t.covered};});}).catch(function(){});},
- results:function(){var R=rooms();return {notSent:'Photo image files are not sent (too large). Only photo metadata, tags, and room notes are included.',photoCount:MWRP.meta?MWRP.meta.length:null,photos:MWRP.meta||'metadata still loading',rooms:R.map(function(r){return {level:r.lv,room:r.name,note:S.notes[r.id]||'',photos:MWRP.meta?MWRP.meta.filter(function(m){return m.room===r.name&&m.level===r.lv;}).length:null};}),extraRooms:S.extra};},
- notes:function(){return rooms().filter(function(r){return S.notes[r.id];}).map(function(r){return r.lv+' / '+r.name+': '+S.notes[r.id];}).join('\n');}});
+ onMount:function(){allPhotos().then(function(all){var by={};allRooms().forEach(function(r){by[r.id]=r;});MWRP.meta=all.map(function(p){var r=by[p.item]||{},t=S.tags[p.id]||{};return {photoId:p.id,level:r.lv||'',room:r.name||p.item,file:p.name||'',bytes:p.blob?p.blob.size:0,type:p.blob?p.blob.type:'',added:p.t?new Date(p.t).toISOString():null,tag:t.tag||'',covered:!!t.covered};});}).catch(function(){});},
+ results:function(){var R=allRooms();return {notSent:'Photo image files are not sent (too large). Only photo metadata, tags, and room notes are included.',photoCount:MWRP.meta?MWRP.meta.length:null,photos:MWRP.meta||'metadata still loading',rooms:R.map(function(r){return {level:r.lv,room:r.name,note:S.notes[r.id]||'',photos:MWRP.meta?MWRP.meta.filter(function(m){return m.room===r.name&&m.level===r.lv;}).length:null};}),extraRooms:S.extra};},
+ notes:function(){return allRooms().filter(function(r){return S.notes[r.id];}).map(function(r){return r.lv+' / '+r.name+': '+S.notes[r.id];}).join('\n');}});
+</script>
+<script src="mid-submit.js?v=mid2"></script>
+<script>
+(function(){
+function meta(ids){return allPhotos().then(function(all){var by={};allRooms().forEach(function(r){by[r.id]=r;});return all.filter(function(p){return ids.indexOf(p.item)>=0;}).map(function(p){var r=by[p.item]||{},t=S.tags[p.id]||{};return {photoId:p.id,level:r.lv||'',room:r.name||p.item,file:p.name||'',bytes:p.blob?p.blob.size:0,type:p.blob?p.blob.type:'',tag:t.tag||'',covered:!!t.covered};});});}
+MWMid({app:'room-photos',deck:'2026-10-13',
+ answered:function(){return (db?counts():openDB().then(counts)).then(function(c){return rooms().filter(function(r){return c[r.id]||(S.notes[r.id]&&S.notes[r.id].trim());}).map(function(r){return r.id;});});},
+ total:function(){return allRooms().length;},
+ results:function(ids){return meta(ids).then(function(m){return {notSent:'Photo image files are not sent (too large). Only photo metadata, tags, and room notes are included.',photoCount:m.length,photos:m,rooms:allRooms().filter(function(r){return ids.indexOf(r.id)>=0;}).map(function(r){return {level:r.lv,room:r.name,note:S.notes[r.id]||'',photos:m.filter(function(x){return x.room===r.name&&x.level===r.lv;}).length};}),extraRooms:S.extra};});},
+ notes:function(ids){return allRooms().filter(function(r){return ids.indexOf(r.id)>=0&&S.notes[r.id];}).map(function(r){return r.lv+' / '+r.name+': '+S.notes[r.id];}).join('\n');},
+ hide:function(ids,fresh){ids.forEach(function(i){if(RP_HIDE.indexOf(i)<0)RP_HIDE.push(i);});if(fresh){S.last=0;OPEN=null;if(S.pos!=="finish")home();}}});})();
 </script>
 <!-- /mw-submit -->
 <!-- mw-built-footer -->
